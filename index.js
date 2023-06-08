@@ -53,6 +53,20 @@ async function run() {
             res.send({ token })
         })
 
+        // verify admin
+        // Warning: use verifyJWT before using verifyAdmin
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email
+            console.log(email);
+            const query = { email: email }
+            const user = await userCollection.findOne(query)
+            console.log(user);
+            if (user?.role !== 'admin') {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+            next();
+        }
+
         // user collection api starts
         app.post('/users', async (req, res) => {
             const user = req.body;
@@ -64,7 +78,12 @@ async function run() {
             const result = await userCollection.insertOne(user)
             res.send(result)
         })
-        app.get('/getUsers', async (req, res) => {
+        app.get('/getUsers', verifyJWT, verifyAdmin, async (req, res) => {
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
             const result = await userCollection.find().toArray();
             res.send(result)
         })
