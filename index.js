@@ -78,7 +78,8 @@ async function run() {
             const result = await userCollection.insertOne(user)
             res.send(result)
         })
-        app.get('/getUsers', verifyJWT, verifyAdmin, async (req, res) => {
+        // TODO: verify admin
+        app.get('/getUsers', verifyJWT,  async (req, res) => {
             const email = req.query.email;
             const decodedEmail = req.decoded.email
             if (email !== decodedEmail) {
@@ -89,14 +90,27 @@ async function run() {
         })
 
         // check admin
-        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+        app.get('/users/admin/:email',verifyJWT, async (req, res) => {
             const email = req.params.email;
-            if (req.decoded.email !== email) {
-                res.send({ admin: false })
+            if (req?.decoded?.email !== email) {
+                 res.send({ admin: false })
             }
             const query = { email: email }
             const user = await userCollection.findOne(query)
             const result = { admin: user?.role === 'admin' }
+            console.log(result);
+            res.send(result)
+        })
+
+        // check instructor
+        app.get('/users/instructor/:email',verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            if (req?.decoded?.email !== email) {
+                 res.send({ admin: false })
+            }
+            const query = { email: email }
+            const user = await userCollection.findOne(query)
+            const result = { instructor: user?.role === 'instructor' }
             res.send(result)
         })
 
@@ -107,6 +121,19 @@ async function run() {
             const updateDoc = {
                 $set: {
                     role: 'admin'
+                },
+            };
+            const result = await userCollection.updateOne(filter, updateDoc)
+            res.send(result);
+        })
+
+        //   make instructor
+        app.patch('/users/instructor/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    role: 'instructor'
                 },
             };
             const result = await userCollection.updateOne(filter, updateDoc)
