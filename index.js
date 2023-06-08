@@ -31,6 +31,12 @@ async function run() {
         await client.connect();
         const userCollection = client.db('SportopiaDB').collection('Users')
 
+        // json web token
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const jwt = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '1h' })
+            res.send(jwt)
+        })
 
         // user collection api starts
         app.post('/users', async (req, res) => {
