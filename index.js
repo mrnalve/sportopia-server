@@ -80,6 +80,16 @@ async function run() {
             }
             next();
         }
+        // admin : manage classes
+        app.get('/manageClasses',verifyJWT, verifyAdmin, async (req, res) => {
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+            const result = await classCollection.find().toArray()
+            res.send(result)
+        })
 
         // user collection api starts
         app.post('/users', async (req, res) => {
@@ -161,12 +171,13 @@ async function run() {
             const result = await classCollection.insertOne(newClass)
             res.send(result)
         })
-        app.get('/myClasses', verifyJWT, verifyInstructor, async (req, res) => {
+        // TODO: verify jwt and instructor
+        app.get('/myClasses', async (req, res) => {
             const email = req.query.email;
-            const decodedEmail = req.decoded.email
-            if (email !== decodedEmail) {
-                return res.status(403).send({ error: true, message: 'forbidden access' })
-            }
+            // const decodedEmail = req.decoded.email
+            // if (email !== decodedEmail) {
+            //     return res.status(403).send({ error: true, message: 'forbidden access' })
+            // }
             const query = { email: email }
             const result = await classCollection.find(query).toArray()
             res.send(result)
