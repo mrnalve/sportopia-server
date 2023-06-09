@@ -45,6 +45,7 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
         const userCollection = client.db('SportopiaDB').collection('Users')
+        const classCollection = client.db('SportopiaDB').collection('classes')
 
         // json web token
         app.post('/jwt', (req, res) => {
@@ -79,7 +80,7 @@ async function run() {
             res.send(result)
         })
         // TODO: verify admin
-        app.get('/getUsers', verifyJWT,  async (req, res) => {
+        app.get('/getUsers', verifyJWT, async (req, res) => {
             const email = req.query.email;
             const decodedEmail = req.decoded.email
             if (email !== decodedEmail) {
@@ -90,10 +91,10 @@ async function run() {
         })
 
         // check admin
-        app.get('/users/admin/:email',verifyJWT, async (req, res) => {
+        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             if (req?.decoded?.email !== email) {
-                 res.send({ admin: false })
+                res.send({ admin: false })
             }
             const query = { email: email }
             const user = await userCollection.findOne(query)
@@ -103,10 +104,10 @@ async function run() {
         })
 
         // check instructor
-        app.get('/users/instructor/:email',verifyJWT, async (req, res) => {
+        app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             if (req?.decoded?.email !== email) {
-                 res.send({ admin: false })
+                res.send({ admin: false })
             }
             const query = { email: email }
             const user = await userCollection.findOne(query)
@@ -141,6 +142,12 @@ async function run() {
         })
         // user collection api ends
 
+        // instructor api
+        app.post('/addClass', verifyJWT, async (req, res) => {
+            const newClass = req.body;
+            const result = await classCollection.insertOne(newClass)
+            res.send(result)
+        })
 
 
 
