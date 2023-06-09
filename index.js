@@ -67,6 +67,19 @@ async function run() {
             }
             next();
         }
+        // verify Instructor
+        // Warning: use verifyJWT before using verifyInstructor
+        const verifyInstructor = async (req, res, next) => {
+            const email = req.decoded.email
+            console.log(email);
+            const query = { email: email }
+            const user = await userCollection.findOne(query)
+            console.log(user);
+            if (user?.role !== 'instructor') {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+            next();
+        }
 
         // user collection api starts
         app.post('/users', async (req, res) => {
@@ -143,9 +156,19 @@ async function run() {
         // user collection api ends
 
         // instructor api
-        app.post('/addClass', verifyJWT, async (req, res) => {
+        app.post('/addClass', verifyJWT, verifyInstructor, async (req, res) => {
             const newClass = req.body;
             const result = await classCollection.insertOne(newClass)
+            res.send(result)
+        })
+        app.get('/myClasses', verifyJWT, verifyInstructor, async (req, res) => {
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+            const query = { email: email }
+            const result = await classCollection.find(query).toArray()
             res.send(result)
         })
 
