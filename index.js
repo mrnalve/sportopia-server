@@ -96,7 +96,7 @@ async function run() {
             };
             console.log(updateDoc);
             const result = await classCollection.updateOne(filter, updateDoc)
-            
+
             res.send(result);
         })
 
@@ -119,6 +119,13 @@ async function run() {
                 return res.status(403).send({ error: true, message: 'forbidden access' })
             }
             const result = await userCollection.find().toArray();
+            res.send(result)
+        })
+
+        // get all classes to show the classes page
+        app.get('/classes', async (req, res) => {
+            const query = { status: 'approve' }
+            const result = await classCollection.find(query).toArray()
             res.send(result)
         })
 
@@ -191,17 +198,17 @@ async function run() {
             res.send(result)
         })
         // get all the instructor
-        app.get('/instructor', async(req,res)=>{
-            const query = {role: 'instructor'}
+        app.get('/instructor', async (req, res) => {
+            const query = { role: 'instructor' }
             const result = await userCollection.find(query).toArray()
             res.send(result)
         })
         // instructor api ends
 
-        
 
 
-        
+
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
