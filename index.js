@@ -173,7 +173,7 @@ async function run() {
         })
         // user collection api ends
 
-        // instructor api
+        // instructor api starts
         app.post('/addClass', verifyJWT, verifyInstructor, async (req, res) => {
             const newClass = req.body;
             const result = await classCollection.insertOne(newClass)
@@ -190,20 +190,18 @@ async function run() {
             const result = await classCollection.find(query).toArray()
             res.send(result)
         })
+        // get all the instructor
+        app.get('/instructor', async(req,res)=>{
+            const query = {role: 'instructor'}
+            const result = await userCollection.find(query).toArray()
+            res.send(result)
+        })
+        // instructor api ends
+
+        
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+        
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
