@@ -58,10 +58,8 @@ async function run() {
         // Warning: use verifyJWT before using verifyAdmin
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded.email
-            console.log(email);
             const query = { email: email }
             const user = await userCollection.findOne(query)
-            console.log(user);
             if (user?.role !== 'admin') {
                 return res.status(403).send({ error: true, message: 'forbidden access' })
             }
@@ -71,24 +69,35 @@ async function run() {
         // Warning: use verifyJWT before using verifyInstructor
         const verifyInstructor = async (req, res, next) => {
             const email = req.decoded.email
-            console.log(email);
             const query = { email: email }
             const user = await userCollection.findOne(query)
-            console.log(user);
             if (user?.role !== 'instructor') {
                 return res.status(403).send({ error: true, message: 'forbidden access' })
             }
             next();
         }
         // admin : manage classes
-        app.get('/manageClasses',verifyJWT, verifyAdmin, async (req, res) => {
+        app.get('/manageClasses', async (req, res) => {
             const email = req.query.email;
-            const decodedEmail = req.decoded.email
-            if (email !== decodedEmail) {
-                return res.status(403).send({ error: true, message: 'forbidden access' })
-            }
+            // const decodedEmail = req.decoded.email
+            // if (email !== decodedEmail) {
+            //     return res.status(403).send({ error: true, message: 'forbidden access' })
+            // }
             const result = await classCollection.find().toArray()
             res.send(result)
+        })
+        app.patch('/manageClasses/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    status: 'approve'
+                },
+            };
+            console.log(updateDoc);
+            const result = await classCollection.updateOne(filter, updateDoc)
+            
+            res.send(result);
         })
 
         // user collection api starts
@@ -122,7 +131,6 @@ async function run() {
             const query = { email: email }
             const user = await userCollection.findOne(query)
             const result = { admin: user?.role === 'admin' }
-            console.log(result);
             res.send(result)
         })
 
