@@ -46,6 +46,7 @@ async function run() {
         await client.connect();
         const userCollection = client.db('SportopiaDB').collection('Users')
         const classCollection = client.db('SportopiaDB').collection('classes')
+        const selectedClassCollection = client.db('SportopiaDB').collection('selectedClasses')
 
         // json web token
         app.post('/jwt', (req, res) => {
@@ -111,6 +112,21 @@ async function run() {
             const result = await userCollection.insertOne(user)
             res.send(result)
         })
+        app.post('/selectClass', async (req, res) => {
+            const selectedClassInfo = req.body;
+            const result = await selectedClassCollection.insertOne(selectedClassInfo);
+            res.send(result)
+        })
+        // get student or user selected class
+        app.get('/selectedClasses', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+            const result = await selectedClassCollection.find({ userEmail: email }).toArray()
+            res.send(result)
+        })
         // TODO: verify admin
         app.get('/getUsers', verifyJWT, async (req, res) => {
             const email = req.query.email;
@@ -121,7 +137,16 @@ async function run() {
             const result = await userCollection.find().toArray();
             res.send(result)
         })
-
+        // get single user by email
+        app.get('/singleUser', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+            const result = await userCollection.findOne({ email: email })
+            res.send(result)
+        })
         // get all classes to show the classes page
         app.get('/classes', async (req, res) => {
             const query = { status: 'approve' }
