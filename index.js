@@ -6,6 +6,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 require('dotenv').config()
 
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 
 // middleware
 app.use(cors())
@@ -47,6 +48,7 @@ async function run() {
         const userCollection = client.db('SportopiaDB').collection('Users')
         const classCollection = client.db('SportopiaDB').collection('classes')
         const selectedClassCollection = client.db('SportopiaDB').collection('selectedClasses')
+        const paymentCollection = client.db('SportopiaDB').collection('payment')
 
         // json web token
         app.post('/jwt', (req, res) => {
@@ -231,7 +233,48 @@ async function run() {
         // instructor api ends
 
 
+        // payment api
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+        })
 
+        app.post('/payment', async (req, res) => {
+            const payment = req.body;
+            const { itemId, selectedItemId } = payment;
+            try {
+              // Insert payment into paymentCollection
+              const paymentResult = await paymentCollection.insertOne(payment);
+          
+              // Update classCollection to decrease availableSeats and increase enrolledStudents
+              const classFilter = { _id: new ObjectId(itemId) };
+              const classUpdate = {
+                $inc: {
+                  availableSeats: -1,
+                  enrolledStudents: 1
+                }
+              };
+              const classUpdateResult = await classCollection.updateOne(classFilter, classUpdate);
+          
+              // Delete the selected item from selectedClassCollection
+              const selectedClassFilter = { _id: new ObjectId(selectedItemId) };
+              const deleteResult = await selectedClassCollection.deleteOne(selectedClassFilter);
+          
+              res.send({ paymentResult, classUpdateResult, deleteResult });
+            } catch (error) {
+              console.error('Error updating class collection:', error);
+              res.status(500).send('Internal Server Error');
+            }
+          });
+          
 
 
         // Send a ping to confirm a successful connection
