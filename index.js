@@ -205,6 +205,12 @@ async function run() {
             const result = await userCollection.updateOne(filter, updateDoc)
             res.send(result);
         })
+        app.delete('/selectedClass/:id',verifyJWT, async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const result = await selectedClassCollection.deleteOne(filter)
+            res.send(result)
+        })
         // user collection api ends
 
         // instructor api starts
@@ -247,34 +253,40 @@ async function run() {
             })
         })
 
-        app.post('/payment', async (req, res) => {
+        app.post('/payment', verifyJWT, async (req, res) => {
             const payment = req.body;
             const { itemId, selectedItemId } = payment;
             try {
-              // Insert payment into paymentCollection
-              const paymentResult = await paymentCollection.insertOne(payment);
-          
-              // Update classCollection to decrease availableSeats and increase enrolledStudents
-              const classFilter = { _id: new ObjectId(itemId) };
-              const classUpdate = {
-                $inc: {
-                  availableSeats: -1,
-                  enrolledStudents: 1
-                }
-              };
-              const classUpdateResult = await classCollection.updateOne(classFilter, classUpdate);
-          
-              // Delete the selected item from selectedClassCollection
-              const selectedClassFilter = { _id: new ObjectId(selectedItemId) };
-              const deleteResult = await selectedClassCollection.deleteOne(selectedClassFilter);
-          
-              res.send({ paymentResult, classUpdateResult, deleteResult });
+                // Insert payment into paymentCollection
+                const paymentResult = await paymentCollection.insertOne(payment);
+
+                // Update classCollection to decrease availableSeats and increase enrolledStudents
+                const classFilter = { _id: new ObjectId(itemId) };
+                const classUpdate = {
+                    $inc: {
+                        availableSeats: -1,
+                        enrolledStudents: 1
+                    }
+                };
+                const classUpdateResult = await classCollection.updateOne(classFilter, classUpdate);
+
+                // Delete the selected item from selectedClassCollection
+                const selectedClassFilter = { _id: new ObjectId(selectedItemId) };
+                const deleteResult = await selectedClassCollection.deleteOne(selectedClassFilter);
+
+                res.send({ paymentResult, classUpdateResult, deleteResult });
             } catch (error) {
-              console.error('Error updating class collection:', error);
-              res.status(500).send('Internal Server Error');
+                console.error('Error updating class collection:', error);
+                res.status(500).send('Internal Server Error');
             }
-          });
-          
+        });
+
+        app.get('/paymentHistory', async (req, res) => {
+            const email = req.query.email
+            const query = { email: email }
+            const result = await paymentCollection.find(query).toArray()
+            res.send(result)
+        })
 
 
         // Send a ping to confirm a successful connection
