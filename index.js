@@ -49,6 +49,7 @@ async function run() {
         const classCollection = client.db('SportopiaDB').collection('classes')
         const selectedClassCollection = client.db('SportopiaDB').collection('selectedClasses')
         const paymentCollection = client.db('SportopiaDB').collection('payment')
+        const feedbackCollection = client.db('SportopiaDB').collection('feedback')
 
         // json web token
         app.post('/jwt', (req, res) => {
@@ -89,7 +90,7 @@ async function run() {
             const result = await classCollection.find().toArray()
             res.send(result)
         })
-        app.patch('/manageClasses/:id', async (req, res) => {
+        app.patch('/approve/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
             const updateDoc = {
@@ -101,6 +102,30 @@ async function run() {
             const result = await classCollection.updateOne(filter, updateDoc)
 
             res.send(result);
+        })
+        app.patch('/deny/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    status: 'denied'
+                },
+            };
+            const result = await classCollection.updateOne(filter, updateDoc)
+            res.send(result);
+        })
+        // admin feedback
+        app.post('/feedback', async (req, res) => {
+            const feedback = req.body;
+            const result = await feedbackCollection.insertOne(feedback)
+            res.send(result)
+        })
+        // get feedback to show the instructor page
+        app.get('/getFeedback', async (req, res) => {
+            const email = req.query.email
+            const query = {instructorEmail: email}
+            const result = await feedbackCollection.find(query).toArray()
+            res.send(result)
         })
 
         // user collection api starts
