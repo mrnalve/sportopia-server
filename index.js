@@ -205,7 +205,7 @@ async function run() {
             const result = await userCollection.updateOne(filter, updateDoc)
             res.send(result);
         })
-        app.delete('/selectedClass/:id',verifyJWT, async (req, res) => {
+        app.delete('/selectedClass/:id', verifyJWT, async (req, res) => {
             const id = req.params.id
             const filter = { _id: new ObjectId(id) }
             const result = await selectedClassCollection.deleteOne(filter)
@@ -274,6 +274,7 @@ async function run() {
                 const selectedClassFilter = { _id: new ObjectId(selectedItemId) };
                 const deleteResult = await selectedClassCollection.deleteOne(selectedClassFilter);
 
+
                 res.send({ paymentResult, classUpdateResult, deleteResult });
             } catch (error) {
                 console.error('Error updating class collection:', error);
@@ -281,12 +282,15 @@ async function run() {
             }
         });
 
-        app.get('/paymentHistory', async (req, res) => {
-            const email = req.query.email
-            const query = { email: email }
-            const result = await paymentCollection.find(query).toArray()
-            res.send(result)
-        })
+        // payment history api
+        app.get('/paymentHistory', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const sortOptions = { date: -1 }; // Sort in descending order based on the 'date' field
+            const result = await paymentCollection.find(query).sort(sortOptions).toArray();
+            res.send(result);
+        });
+
 
 
         // Send a ping to confirm a successful connection
