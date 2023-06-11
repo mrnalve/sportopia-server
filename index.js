@@ -58,6 +58,20 @@ async function run() {
             res.send({ token })
         })
 
+        // home page: get popular classes
+        app.get('/popularClasses', async (req, res) => {
+            const result = await classCollection.find().sort({ enrolledStudents: -1 })
+                .limit(6).toArray()
+            res.send(result)
+        })
+
+        // home page: get popular instructor
+        app.get('/popularInstructor', async (req, res) => {
+            const query = { role: 'instructor' }
+            const result = await userCollection.find(query).limit(6).toArray()
+            res.send(result)
+        })
+
         // verify admin
         // Warning: use verifyJWT before using verifyAdmin
         const verifyAdmin = async (req, res, next) => {
@@ -81,16 +95,16 @@ async function run() {
             next();
         }
         // admin : manage classes
-        app.get('/manageClasses', async (req, res) => {
+        app.get('/manageClasses', verifyJWT, verifyAdmin, async (req, res) => {
             const email = req.query.email;
-            // const decodedEmail = req.decoded.email
-            // if (email !== decodedEmail) {
-            //     return res.status(403).send({ error: true, message: 'forbidden access' })
-            // }
+            const decodedEmail = req.decoded.email
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
             const result = await classCollection.find().toArray()
             res.send(result)
         })
-        app.patch('/approve/:id', async (req, res) => {
+        app.patch('/approve/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
             const updateDoc = {
@@ -103,7 +117,7 @@ async function run() {
 
             res.send(result);
         })
-        app.patch('/deny/:id', async (req, res) => {
+        app.patch('/deny/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
             const updateDoc = {
@@ -123,7 +137,7 @@ async function run() {
         // get feedback to show the instructor page
         app.get('/getFeedback', async (req, res) => {
             const email = req.query.email
-            const query = {instructorEmail: email}
+            const query = { instructorEmail: email }
             const result = await feedbackCollection.find(query).toArray()
             res.send(result)
         })
@@ -154,8 +168,8 @@ async function run() {
             const result = await selectedClassCollection.find({ userEmail: email }).toArray()
             res.send(result)
         })
-        // TODO: verify admin
-        app.get('/getUsers', verifyJWT, async (req, res) => {
+
+        app.get('/getUsers', verifyJWT, verifyAdmin, async (req, res) => {
             const email = req.query.email;
             const decodedEmail = req.decoded.email
             if (email !== decodedEmail) {
@@ -206,7 +220,7 @@ async function run() {
         })
 
         //   make admin
-        app.patch('/users/admin/:id', async (req, res) => {
+        app.patch('/users/admin/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
             const updateDoc = {
@@ -219,7 +233,7 @@ async function run() {
         })
 
         //   make instructor
-        app.patch('/users/instructor/:id', async (req, res) => {
+        app.patch('/users/instructor/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) }
             const updateDoc = {
@@ -244,13 +258,13 @@ async function run() {
             const result = await classCollection.insertOne(newClass)
             res.send(result)
         })
-        // TODO: verify jwt and instructor
-        app.get('/myClasses', async (req, res) => {
+
+        app.get('/myClasses', verifyJWT, verifyInstructor, async (req, res) => {
             const email = req.query.email;
-            // const decodedEmail = req.decoded.email
-            // if (email !== decodedEmail) {
-            //     return res.status(403).send({ error: true, message: 'forbidden access' })
-            // }
+            const decodedEmail = req.decoded.email
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
             const query = { email: email }
             const result = await classCollection.find(query).toArray()
             res.send(result)
