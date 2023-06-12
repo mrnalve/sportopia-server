@@ -44,7 +44,6 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
         const userCollection = client.db('SportopiaDB').collection('Users')
         const classCollection = client.db('SportopiaDB').collection('classes')
         const selectedClassCollection = client.db('SportopiaDB').collection('selectedClasses')
@@ -254,6 +253,11 @@ async function run() {
 
         // instructor api starts
         app.post('/addClass', verifyJWT, verifyInstructor, async (req, res) => {
+            const email = req.query.email;
+            const decodedEmail = req.decoded.email
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
             const newClass = req.body;
             const result = await classCollection.insertOne(newClass)
             res.send(result)
