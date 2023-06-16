@@ -2,6 +2,8 @@ const express = require('express');
 const app = express()
 const port = process.env.PORT || 5000;
 const jwt = require('jsonwebtoken');
+const nodemailer = require("nodemailer");
+const mg = require('nodemailer-mailgun-transport');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 require('dotenv').config()
@@ -11,6 +13,66 @@ const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 // middleware
 app.use(cors())
 app.use(express.json())
+
+// send payment confirmation email
+// let transporter = nodemailer.createTransport({
+//     host: 'smtp.sendgrid.net',
+//     port: 587,
+//     auth: {
+//         user: "apikey",
+//         pass: process.env.SENDGRID_API_KEY
+//     }
+// })
+// This is your API key that you retrieve from www.mailgun.com/cp (free up to 10K monthly emails)
+const auth = {
+    auth: {
+        api_key: process.env.EMAIL_PRIVATE,
+        domain: process.env.EMAIL_DOMAIN
+    }
+}
+
+const transporter = nodemailer.createTransport(mg(auth));
+const sendPaymentConfirmationEmail = payment => {
+    transporter.sendMail({
+        from: "mdalve1091@gmail.com", // verified sender email
+        to:'mdalve1091@gmail.com', // recipient email
+        subject: "Your order is confirmed.Class start soon", // Subject line
+        text: "Write Here!", // plain text body
+        html: `
+            <html>
+                <head>
+                    <style>
+                        /* Add your custom styles here */
+                    </style>
+                </head>
+                <body>
+                    <h1>Payment Confirmation</h1>
+                    <p>Dear Customer,</p>
+                    <p>We are pleased to inform you that your payment has been successfully received and your order is confirmed.</p>
+                    <p>Class Details:</p>
+                    <ul>
+                        <li>Course: ${payment.className}</li>
+                        <li>Date: ${payment.date}</li>
+                        <li>Transaction Id: ${payment.TransactionId}</li>
+                        <li>Location: [Insert location]</li>
+                    </ul>
+                    <p>We look forward to seeing you in the class. Should you have any questions or require further assistance, please don't hesitate to contact us.</p>
+                    <p>Thank you for choosing our services.</p>
+                    <p>Best regards,</p>
+                    <p>The Sportopia Team</p>
+                </body>
+            </html>
+        `, // html body
+    }, function (error, info) {
+        if (error) {
+            console.log(error);
+        } else {
+            console.log('Email sent: ' + info.response);
+        }
+    });
+}
+
+
 
 // jwt verify
 const verifyJWT = (req, res, next) => {
@@ -317,6 +379,8 @@ async function run() {
                 const selectedClassFilter = { _id: new ObjectId(selectedItemId) };
                 const deleteResult = await selectedClassCollection.deleteOne(selectedClassFilter);
 
+                // send an email confirming payment
+                sendPaymentConfirmationEmail(payment)
 
                 res.send({ paymentResult, classUpdateResult, deleteResult });
             } catch (error) {
